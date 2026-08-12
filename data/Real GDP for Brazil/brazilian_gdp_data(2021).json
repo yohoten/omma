@@ -1,0 +1,164 @@
+[
+    {
+        "observation_date": "2021-01-01",
+        "state": "São Paulo",
+        "geolocation_state": "SP",
+        "gdp": 2719.75
+    },
+    {
+        "observation_date": "2021-01-01",
+        "state": "Rio de Janeiro",
+        "geolocation_state": "RJ",
+        "gdp": 949.3
+    },
+    {
+        "observation_date": "2021-01-01",
+        "state": "Minas Gerais",
+        "geolocation_state": "MG",
+        "gdp": 337.59
+    },
+    {
+        "observation_date": "2021-01-01",
+        "state": "Rio Grande do Sul",
+        "geolocation_state": "RS",
+        "gdp": 857.59
+    },
+    {
+        "observation_date": "2021-01-01",
+        "state": "Paraná",
+        "geolocation_state": "PR",
+        "gdp": 549.97
+    },
+    {
+        "observation_date": "2021-01-01",
+        "state": "Santa Catarina",
+        "geolocation_state": "SC",
+        "gdp": 428.57
+    },
+    {
+        "observation_date": "2021-01-01",
+        "state": "Bahia",
+        "geolocation_state": "BA",
+        "gdp": 352.62
+    },
+    {
+        "observation_date": "2021-01-01",
+        "state": "Distrito Federal",
+        "geolocation_state": "DF",
+        "gdp": 286.94
+    },
+    {
+        "observation_date": "2021-01-01",
+        "state": "Goiás",
+        "geolocation_state": "GO",
+        "gdp": 269.63
+    },
+    {
+        "observation_date": "2021-01-01",
+        "state": "Pará",
+        "geolocation_state": "PA",
+        "gdp": 262.91
+    },
+    {
+        "observation_date": "2021-01-01",
+        "state": "Mato Grosso",
+        "geolocation_state": "MT",
+        "gdp": 233.39
+    },
+    {
+        "observation_date": "2021-01-01",
+        "state": "Pernambuco",
+        "geolocation_state": "PE",
+        "gdp": 220.81
+    },
+    {
+        "observation_date": "2021-01-01",
+        "state": "Ceará",
+        "geolocation_state": "CE",
+        "gdp": 194.89
+    },
+    {
+        "observation_date": "2021-01-01",
+        "state": "Espírito Santo",
+        "geolocation_state": "ES",
+        "gdp": 186.34
+    },
+    {
+        "observation_date": "2021-01-01",
+        "state": "Mato Grosso do Sul",
+        "geolocation_state": "MS",
+        "gdp": 142.2
+    },
+    {
+        "observation_date": "2021-01-01",
+        "state": "Amazonas",
+        "geolocation_state": "AM",
+        "gdp": 131.53
+    },
+    {
+        "observation_date": "2021-01-01",
+        "state": "Maranhão",
+        "geolocation_state": "MA",
+        "gdp": 124.98
+    },
+    {
+        "observation_date": "2021-01-01",
+        "state": "Rio Grande do Norte",
+        "geolocation_state": "RN",
+        "gdp": 80.18
+    },
+    {
+        "observation_date": "2021-01-01",
+        "state": "Paraíba",
+        "geolocation_state": "PB",
+        "gdp": 77.47
+    },
+    {
+        "observation_date": "2021-01-01",
+        "state": "Alagoas",
+        "geolocation_state": "AL",
+        "gdp": 76.27
+    },
+    {
+        "observation_date": "2021-01-01",
+        "state": "Piauí",
+        "geolocation_state": "PI",
+        "gdp": 64.03
+    },
+    {
+        "observation_date": "2021-01-01",
+        "state": "Rondônia",
+        "geolocation_state": "RO",
+        "gdp": 58.17
+    },
+    {
+        "observation_date": "2021-01-01",
+        "state": "Sergipe",
+        "geolocation_state": "SE",
+        "gdp": 51.86
+    },
+    {
+        "observation_date": "2021-01-01",
+        "state": "Tocantins",
+        "geolocation_state": "TO",
+        "gdp": 51.78
+    },
+    {
+        "observation_date": "2021-01-01",
+        "state": "Acre",
+        "geolocation_state": "AC",
+        "gdp": 21.37
+    },
+    {
+        "observation_date": "2021-01-01",
+        "state": "Amapá",
+        "geolocation_state": "AP",
+        "gdp": 20.1
+    },
+    {
+        "observation_date": "2021-01-01",
+        "state": "Roraima",
+        "geolocation_state": "RR",
+        "gdp": 18.2
+    }
+]

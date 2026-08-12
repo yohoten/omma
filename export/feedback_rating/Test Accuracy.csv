@@ -1,0 +1,7 @@
+models,values
+NN-Lstm,73.38621
+Logistic Regression,73.3252
+Naive Bayes,74.35021
+Support Vector Machine (SVM),74.49664
+RandomForest Classifier,78.40164
+XGBoost Classifier,82.91161

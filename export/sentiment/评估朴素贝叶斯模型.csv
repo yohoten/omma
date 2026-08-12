@@ -1,0 +1,5 @@
+model,approach,acc,precision,recall,f1,auc,total_time
+LogisticRegression,Treino 5 K-folds,0.884,0.9216,0.9189,0.9202,0.9426,5.452
+LogisticRegression,Teste,0.8834,0.9219,0.9161,0.919,0.943,0.034
+Naive Bayes,Treino 5 K-folds,0.834,0.9354,0.8292,0.8791,0.8791,7.281
+Naive Bayes,Teste,0.8342,0.9345,0.8284,0.8782,0.8799,0.084

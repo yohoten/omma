@@ -167,7 +167,8 @@ streamlit run streamlit_app.py
 - **数据库配置（[`2.基础数据探索.ipynb`](2.基础数据探索.ipynb)）**：该 Notebook 从 MySQL `basic_data` 库读取数据，连接参数统一由 [`config.py`](config.py) 管理，通过项目根目录 `.env` 文件配置（模板见 [`.env.example`](.env.example)），代码中不再硬编码口令。
 - **数据路径**：各 Notebook 统一通过 [`config.py`](config.py) 提供的数据路径常量（如 `GEOJSON_PATH`）引用，不再硬编码绝对路径；数据目录规范见 [`data/README.md`](data/README.md)。
 - **[`6.评论情感分析.ipynb`](6.评论情感分析.ipynb)** 使用葡语停用词，需先执行 `nltk.download('stopwords')` 等资源下载。
-- **[`3.反馈评分预测.ipynb`](3.反馈评分预测.ipynb)** 训练 LSTM 需要 TensorFlow，请按机器配置确认 GPU/CPU 版本。
+- **[`3.反馈评分预测.ipynb`](3.反馈评分预测.ipynb)** 训练 LSTM 需要 TensorFlow（Windows 下约 400MB）。若暂不使用该 Notebook，或只需运行 [`streamlit_app.py`](streamlit_app.py)，可临时注释掉 [`requirements.txt`](requirements.txt) 中的 `tensorflow==2.18.0` 以加快安装。
+- **安装加速（国内镜像）**：建议使用 `pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple`；[`requirements.txt`](requirements.txt) 注释已改为纯 ASCII，避免 Windows 中文系统以 GBK 读取时出现 `UnicodeDecodeError`。
 
 ---
 

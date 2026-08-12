@@ -1,0 +1,60 @@
+# ============================================================
+# Olist Multi-Modal E-Commerce Analytics (OMMA) - Python deps
+# Python version: 3.9.x (.venv is 3.9.13)
+# Generated: 2026-08-05
+# Install:   pip install -r requirements.txt
+# Note:      Versions pinned to the ones actually installed.
+#            All comments are ASCII to avoid GBK/UTF-8 decoding
+#            errors on Windows Chinese locale.
+# ============================================================
+
+# ---------- Data Science Core ----------
+numpy==1.26.4
+pandas==2.2.2
+scipy==1.12.0
+scikit-learn==1.4.1.post1
+joblib==1.3.2
+
+# ---------- Data Visualization ----------
+matplotlib==3.8.3
+seaborn==0.13.2
+plotly==5.24.1
+chart-studio==1.1.0          # used by 2_basic_data_exploration.ipynb
+cufflinks==0.17.3            # used by 2_basic_data_exploration.ipynb
+bokeh==3.4.3
+holoviews==1.20.0
+geoviews==1.12.0
+datashader==0.16.3
+colorcet==3.1.0
+folium==0.17.0
+
+# ---------- Machine Learning ----------
+tensorflow==2.18.0           # keras included; used by 3_feedback_rating.ipynb (LSTM)
+xgboost==2.1.3
+lightgbm==4.5.0
+lifetimes==0.11.3            # used by 5_customer_lifetime_value.ipynb (BG/NBD)
+shap==0.46.0                 # used by scripts/ml_utils.py
+
+# ---------- Text / NLP ----------
+nltk==3.9.1                  # also need: nltk.download('stopwords')
+wordcloud==1.9.3
+requests==2.32.3
+tabulate==0.9.0              # used by 2_basic_data_exploration.ipynb
+
+# ---------- Web / Database ----------
+SQLAlchemy==2.0.36
+PyMySQL==1.1.1
+
+# ---------- Jupyter / Interactive ----------
+ipython==8.18.1
+ipywidgets==8.1.5
+
+# ---------- Web Visualization (streamlit_app.py) ----------
+streamlit==1.36.0
+
+# ---------- Image / File IO ----------
+pillow==10.2.0
+openpyxl==3.1.2
+
+# ---------- Utils ----------
+tqdm==4.66.4
