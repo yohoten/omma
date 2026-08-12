@@ -35,8 +35,8 @@ _load_dotenv()
 # ---- 数据目录 ----
 DATA_DIR = BASE_DIR / "data"
 RAW_DATA_DIR = DATA_DIR / "olist_public_dataset"  # Olist 原始公开数据集（标准来源）
-BASIC_DATA_DIR = DATA_DIR / "basic_data"          # 处理后的基础数据（GeoJSON / GDP 等）
-GEOJSON_PATH = BASIC_DATA_DIR / "brazil-states.geojson"  # 巴西州界 GeoJSON
+GDP_DIR = DATA_DIR / "brazi_gdp"                  # 巴西 GDP 数据与州界 GeoJSON
+GEOJSON_PATH = GDP_DIR / "brazil-states.geojson"  # 巴西州界 GeoJSON
 
 # ---- MySQL 连接参数（优先环境变量 / .env，其次默认值） ----
 DB_HOST = os.getenv("OLIST_DB_HOST", "127.0.0.1")

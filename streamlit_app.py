@@ -494,7 +494,7 @@ def main():
         render_overview(d)
     elif menu == "🗺️ 地理分析":
         if geojson is None:
-            st.info("缺少地理数据，请检查 data/basic_data/brazil-states.geojson。")
+            st.info("缺少地理数据，请检查 data/brazi_gdp/brazil-states.geojson。")
         else:
             render_geo(d, geojson)
     elif menu == "📦 商品分析":
