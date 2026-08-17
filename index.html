@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Olist 电商多模态智能分析（OMMA）</title>
+<meta name="description" content="Olist Multi-Modal E-Commerce Analytics · 基于巴西 Olist 公开数据集的跨境电商多模态数据分析与建模项目" />
+<style>
+:root {
+  --bg0: #020818;
+  --bg1: #04102c;
+  --panel: rgba(8, 26, 62, .72);
+  --line: rgba(0, 180, 255, .28);
+  --cyan: #00e5ff;
+  --blue: #3d7eff;
+  --green: #00ffa3;
+  --amber: #ffb020;
+  --pink: #ff4d8f;
+  --purple: #8b5cf6;
+  --text: #cfe8ff;
+  --text-dim: #83aed4;
+  --text-mute: #5d84ad;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  background:
+    radial-gradient(ellipse at 50% -15%, rgba(20, 90, 200, .28) 0%, rgba(5, 15, 40, 0) 55%),
+    linear-gradient(180deg, var(--bg1) 0%, var(--bg0) 100%);
+  color: var(--text);
+  font-family: "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+  line-height: 1.65;
+  overflow-x: hidden;
+}
+body::before {
+  content: ""; position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background-image:
+    linear-gradient(rgba(0, 220, 255, .04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 220, 255, .04) 1px, transparent 1px);
+  background-size: 44px 44px;
+  -webkit-mask-image: radial-gradient(ellipse at 50% 20%, #000 25%, transparent 80%);
+          mask-image: radial-gradient(ellipse at 50% 20%, #000 25%, transparent 80%);
+}
+.wrap { position: relative; z-index: 1; max-width: 1200px; margin: 0 auto; padding: 0 22px; }
+
+/* ===== 顶栏 ===== */
+.nav {
+  position: sticky; top: 0; z-index: 50;
+  background: rgba(2, 8, 24, .78);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(0, 180, 255, .18);
+}
+.nav-inner { display: flex; align-items: center; justify-content: space-between; height: 56px; }
+.brand { display: flex; align-items: center; gap: 10px; font-weight: 700; letter-spacing: .08em; color: #eafcff; }
+.brand .logo {
+  width: 30px; height: 30px; border-radius: 8px; display: grid; place-items: center;
+  background: linear-gradient(135deg, var(--cyan), var(--blue));
+  box-shadow: 0 0 14px rgba(0, 229, 255, .5); font-size: 15px;
+}
+.nav-links { display: flex; gap: 22px; font-size: 13px; }
+.nav-links a { color: var(--text-dim); text-decoration: none; transition: color .2s; }
+.nav-links a:hover { color: var(--cyan); }
+
+/* ===== Hero ===== */
+.hero { text-align: center; padding: 74px 0 46px; position: relative; }
+.hero .halo {
+  position: absolute; left: 50%; top: 12px; transform: translateX(-50%);
+  width: 640px; max-width: 92%; height: 240px;
+  background: radial-gradient(ellipse, rgba(0, 160, 255, .22), transparent 70%);
+  filter: blur(10px); pointer-events: none;
+}
+.hero .badge {
+  display: inline-block; font-size: 12px; letter-spacing: .22em; color: var(--cyan);
+  border: 1px solid rgba(0, 229, 255, .4); border-radius: 999px; padding: 5px 16px;
+  background: rgba(0, 229, 255, .06); margin-bottom: 18px;
+}
+.hero h1 {
+  font-size: clamp(30px, 5vw, 46px); font-weight: 800; letter-spacing: .06em;
+  color: #eafcff; text-shadow: 0 0 22px rgba(0, 229, 255, .55);
+}
+.hero h1 em { font-style: normal; color: var(--cyan); }
+.hero .sub { margin-top: 14px; font-size: 15px; color: var(--text-dim); max-width: 760px; margin-left: auto; margin-right: auto; }
+.hero .cta { margin-top: 30px; display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+.btn {
+  display: inline-flex; align-items: center; gap: 8px; padding: 11px 26px; border-radius: 10px;
+  font-size: 14px; font-weight: 600; text-decoration: none; transition: transform .15s, box-shadow .15s;
+}
+.btn-primary { background: linear-gradient(135deg, var(--cyan), var(--blue)); color: #03122b; box-shadow: 0 6px 20px rgba(0, 180, 255, .35); }
+.btn-ghost { border: 1px solid rgba(0, 229, 255, .45); color: var(--cyan); background: rgba(0, 229, 255, .05); }
+.btn:hover { transform: translateY(-2px); box-shadow: 0 10px 28px rgba(0, 180, 255, .45); }
+
+/* ===== 节标题 ===== */
+.section { padding: 54px 0 10px; }
+.section-title { display: flex; align-items: center; gap: 12px; margin-bottom: 28px; }
+.section-title .tick { width: 5px; height: 24px; border-radius: 3px; background: linear-gradient(180deg, var(--cyan), var(--blue)); box-shadow: 0 0 10px var(--cyan); }
+.section-title h2 { font-size: 24px; font-weight: 700; letter-spacing: .05em; color: #eafcff; }
+.section-title .en { font-size: 11px; letter-spacing: .28em; color: var(--text-mute); margin-left: 4px; }
+
+/* ===== 数据速览 ===== */
+.stats { display: grid; grid-template-columns: repeat(6, 1fr); gap: 14px; }
+.stat-card {
+  position: relative; padding: 20px 14px 16px; text-align: center; border-radius: 12px; overflow: hidden;
+  background: linear-gradient(165deg, rgba(9, 32, 74, .8), rgba(3, 12, 34, .9));
+  border: 1px solid var(--line);
+}
+.stat-card::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 2px;
+  background: linear-gradient(90deg, transparent, var(--sc), transparent); filter: drop-shadow(0 0 6px var(--sc)); }
+.stat-card .num { font-size: clamp(20px, 2.4vw, 28px); font-weight: 800; color: #eafcff; text-shadow: 0 0 14px rgba(0, 229, 255, .45); font-variant-numeric: tabular-nums; }
+.stat-card .num small { font-size: 12px; color: var(--green); font-weight: 600; margin-left: 2px; }
+.stat-card .lab { margin-top: 6px; font-size: 12px; color: var(--text-dim); }
+
+/* ===== 模块卡片 ===== */
+.cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.card {
+  position: relative; display: flex; flex-direction: column; padding: 22px 20px 18px; border-radius: 14px;
+  background: linear-gradient(165deg, rgba(8, 26, 62, .75), rgba(3, 11, 30, .9));
+  border: 1px solid var(--line); text-decoration: none; color: var(--text);
+  transition: transform .18s, border-color .18s, box-shadow .18s; overflow: hidden;
+}
+.card::before, .card::after { content: ""; position: absolute; width: 14px; height: 14px; border-color: var(--cc); border-style: solid; opacity: .8; }
+.card::before { top: 6px; left: 6px; border-width: 2px 0 0 2px; }
+.card::after { bottom: 6px; right: 6px; border-width: 0 2px 2px 0; }
+.card:hover { transform: translateY(-4px); border-color: rgba(0, 229, 255, .6); box-shadow: 0 12px 30px rgba(0, 120, 255, .22); }
+.card .ico { font-size: 26px; margin-bottom: 10px; }
+.card h3 { font-size: 17px; font-weight: 700; color: #dff6ff; margin-bottom: 6px; }
+.card p { font-size: 13px; color: var(--text-dim); flex: 1; }
+.card .tags { margin-top: 12px; display: flex; flex-wrap: wrap; gap: 6px; }
+.card .tag { font-size: 11px; padding: 3px 9px; border-radius: 999px; background: rgba(0, 229, 255, .08); border: 1px solid rgba(0, 229, 255, .25); color: #9fd9ff; }
+.card .go { margin-top: 12px; font-size: 12px; color: var(--cyan); letter-spacing: .1em; }
+
+/* ===== 核心发现 ===== */
+.findings { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+.finding {
+  display: flex; gap: 14px; padding: 18px 18px; border-radius: 12px;
+  background: rgba(8, 26, 62, .55); border: 1px solid rgba(0, 180, 255, .18);
+}
+.finding .idx { font-size: 22px; font-weight: 800; color: var(--cyan); text-shadow: 0 0 10px rgba(0, 229, 255, .5); min-width: 34px; }
+.finding h4 { font-size: 15px; color: #dff6ff; margin-bottom: 4px; }
+.finding p { font-size: 13px; color: var(--text-dim); }
+
+/* ===== 图表展示 ===== */
+.gallery { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.shot {
+  position: relative; border-radius: 12px; overflow: hidden; cursor: zoom-in;
+  border: 1px solid var(--line); background: rgba(3, 12, 34, .7); line-height: 0;
+}
+.shot img { width: 100%; height: 210px; object-fit: cover; transition: transform .3s; }
+.shot:hover img { transform: scale(1.04); }
+.shot .cap { position: absolute; left: 0; right: 0; bottom: 0; padding: 26px 12px 10px; font-size: 12px; color: #cfe8ff;
+  background: linear-gradient(180deg, transparent, rgba(2, 8, 24, .92)); line-height: 1.5; }
+.shot .cap b { color: var(--cyan); font-weight: 600; }
+
+/* ===== 技术栈 ===== */
+.stack { display: flex; flex-wrap: wrap; gap: 10px; }
+.pill {
+  padding: 8px 16px; border-radius: 999px; font-size: 13px;
+  background: rgba(0, 229, 255, .06); border: 1px solid rgba(0, 180, 255, .25); color: #bfe9ff;
+}
+.pill b { color: var(--cyan); font-weight: 600; }
+
+/* ===== 快速开始 ===== */
+.code-block {
+  border-radius: 12px; overflow: hidden; border: 1px solid var(--line);
+  background: rgba(2, 10, 28, .92);
+}
+.code-block .code-head { display: flex; align-items: center; gap: 7px; padding: 10px 14px; border-bottom: 1px solid rgba(0, 180, 255, .15); }
+.code-block .dot { width: 10px; height: 10px; border-radius: 50%; }
+.code-block .dot.r { background: #ff5f57; } .code-block .dot.y { background: #febc2e; } .code-block .dot.g { background: #28c840; }
+.code-block pre { padding: 18px 20px; font-size: 13px; line-height: 1.8; overflow-x: auto; color: #a9e8d6; font-family: Consolas, "Courier New", monospace; }
+.code-block .cm { color: #5d84ad; }
+.code-block .co { color: var(--cyan); }
+.code-block .ok { color: var(--green); }
+
+/* ===== 页脚 ===== */
+.footer { margin-top: 70px; padding: 34px 0 40px; border-top: 1px solid rgba(0, 180, 255, .18); text-align: center; }
+.footer .links { display: flex; justify-content: center; gap: 20px; margin-bottom: 14px; flex-wrap: wrap; }
+.footer .links a { color: var(--text-dim); text-decoration: none; font-size: 13px; transition: color .2s; }
+.footer .links a:hover { color: var(--cyan); }
+.footer .copy { font-size: 12px; color: var(--text-mute); letter-spacing: .05em; }
+.footer .copy a { color: var(--text-mute); }
+
+/* ===== Lightbox ===== */
+.lightbox { position: fixed; inset: 0; z-index: 100; display: none; align-items: center; justify-content: center;
+  background: rgba(2, 6, 18, .94); padding: 30px; }
+.lightbox.open { display: flex; }
+.lightbox img { max-width: 92%; max-height: 88vh; border-radius: 10px; border: 1px solid rgba(0, 229, 255, .35); box-shadow: 0 0 40px rgba(0, 140, 255, .35); }
+.lightbox .lb-close { position: absolute; top: 20px; right: 28px; font-size: 30px; color: #cfe8ff; cursor: pointer; background: none; border: none; }
+.lightbox .lb-cap { position: absolute; bottom: 18px; left: 0; right: 0; text-align: center; color: var(--text-dim); font-size: 14px; }
+
+/* ===== 响应式 ===== */
+@media (max-width: 980px) {
+  .stats { grid-template-columns: repeat(3, 1fr); }
+  .cards, .gallery { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 620px) {
+  .stats { grid-template-columns: repeat(2, 1fr); }
+  .cards, .gallery, .findings { grid-template-columns: 1fr; }
+  .nav-links { display: none; }
+  .hero { padding-top: 50px; }
+}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="wrap nav-inner">
+    <div class="brand"><span class="logo">🛒</span> OMMA · Olist 电商多模态智能分析</div>
+    <div class="nav-links">
+      <a href="#stats">数据速览</a>
+      <a href="#modules">分析模块</a>
+      <a href="#findings">核心发现</a>
+      <a href="#gallery">成果展示</a>
+      <a href="#start">快速开始</a>
+    </div>
+  </div>
+</nav>
+
+<!-- ===== Hero ===== -->
+<header class="hero">
+  <div class="halo"></div>
+  <div class="wrap">
+    <div class="badge">OMMA · BRAZILIAN E-COMMERCE MULTI-MODAL ANALYTICS</div>
+    <h1>Olist 电商<em>多模态</em>智能分析</h1>
+    <p class="sub">
+      基于巴西电商平台 <b style="color:#9fd9ff">Olist</b> 公开数据集（2016–2018，约 10 万笔订单）的全链路分析项目：
+      融合<b style="color:#9fd9ff">表格 · 文本 · 地理空间 · 时间序列</b>四类异构数据，
+      覆盖数据探索、地理洞察、评分预测、客户价值细分、生命周期价值预测与情感分析。
+    </p>
+    <div class="cta">
+      <a class="btn btn-primary" href="export/dashboard/omma_dashboard.html">🖥️ 查看数据大屏</a>
+      <a class="btn btn-ghost" href="#start">🚀 快速开始</a>
+      <a class="btn btn-ghost" href="export/Olist/OlistReport.pdf">📄 分析报告 PDF</a>
+    </div>
+  </div>
+</header>
+
+<!-- ===== 数据速览 ===== -->
+<section class="section" id="stats">
+  <div class="wrap">
+    <div class="section-title"><span class="tick"></span><h2>数据速览</h2><span class="en">KEY NUMBERS</span></div>
+    <div class="stats">
+      <div class="stat-card" style="--sc:#00e5ff"><div class="num">99,441<small>单</small></div><div class="lab">总订单数</div></div>
+      <div class="stat-card" style="--sc:#3d7eff"><div class="num">96,096<small>人</small></div><div class="lab">唯一客户</div></div>
+      <div class="stat-card" style="--sc:#00ffa3"><div class="num">R$ 1,359<small>万</small></div><div class="lab">总销售额</div></div>
+      <div class="stat-card" style="--sc:#ffb020"><div class="num">12.5<small>天</small></div><div class="lab">平均配送时效</div></div>
+      <div class="stat-card" style="--sc:#ff4d8f"><div class="num">4.16<small>分</small></div><div class="lab">平均用户评分</div></div>
+      <div class="stat-card" style="--sc:#8b5cf6"><div class="num">73<small>类</small></div><div class="lab">商品品类</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 分析模块 ===== -->
+<section class="section" id="modules">
+  <div class="wrap">
+    <div class="section-title"><span class="tick"></span><h2>六大分析模块</h2><span class="en">ANALYTICS MODULES</span></div>
+    <div class="cards">
+      <a class="card" style="--cc:#00e5ff" href="2.基础数据探索.ipynb">
+        <div class="ico">🔍</div>
+        <h3>基础数据探索</h3>
+        <p>数据集概览、各州/城市客户分布、表间关联关系与 choropleth 分级统计地图。</p>
+        <div class="tags"><span class="tag">Pandas</span><span class="tag">Plotly</span><span class="tag">GeoJSON</span></div>
+        <div class="go">打开 Notebook →</div>
+      </a>
+      <a class="card" style="--cc:#3d7eff" href="1.地理空间分析.ipynb">
+        <div class="ico">🗺️</div>
+        <h3>地理空间分析</h3>
+        <p>CEP 邮编体系拆解、订单/收入/运费/配送时效/延迟的地域分布与空间可视化。</p>
+        <div class="tags"><span class="tag">Datashader</span><span class="tag">HoloViews</span><span class="tag">Folium</span></div>
+        <div class="go">打开 Notebook →</div>
+      </a>
+      <a class="card" style="--cc:#00ffa3" href="3.反馈评分预测.ipynb">
+        <div class="ico">🤖</div>
+        <h3>反馈评分预测</h3>
+        <p>基于评论文本预测好评/差评，6 模型对比（NB/SVM/LR/RF/XGBoost + LSTM 深度学习）。</p>
+        <div class="tags"><span class="tag">TF-IDF</span><span class="tag">XGBoost</span><span class="tag">LSTM</span></div>
+        <div class="go">打开 Notebook →</div>
+      </a>
+      <a class="card" style="--cc:#ffb020" href="4.客户价值细分.ipynb">
+        <div class="ico">💎</div>
+        <h3>客户价值细分</h3>
+        <p>RFM 分群 + K-Means 聚类，客户留存、新客比率与八类价值矩阵。</p>
+        <div class="tags"><span class="tag">RFM</span><span class="tag">K-Means</span><span class="tag">留存分析</span></div>
+        <div class="go">打开 Notebook →</div>
+      </a>
+      <a class="card" style="--cc:#8b5cf6" href="5.客生价值预测.ipynb">
+        <div class="ico">📈</div>
+        <h3>客生价值预测（CLV）</h3>
+        <p>BTYD 模型（MBG/NBD + Gamma-Gamma）预测客户生命周期价值与存活概率。</p>
+        <div class="tags"><span class="tag">BTYD</span><span class="tag">MBG/NBD</span><span class="tag">Gamma-Gamma</span></div>
+        <div class="go">打开 Notebook →</div>
+      </a>
+      <a class="card" style="--cc:#ff4d8f" href="6.评论情感分析.ipynb">
+        <div class="ico">💬</div>
+        <h3>评论情感分析</h3>
+        <p>葡语评论情感二分类、词云、正负面分布与时空热力图。</p>
+        <div class="tags"><span class="tag">NLTK</span><span class="tag">WordCloud</span><span class="tag">分类模型</span></div>
+        <div class="go">打开 Notebook →</div>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 核心发现 ===== -->
+<section class="section" id="findings">
+  <div class="wrap">
+    <div class="section-title"><span class="tick"></span><h2>核心发现</h2><span class="en">KEY INSIGHTS</span></div>
+    <div class="findings">
+      <div class="finding"><div class="idx">01</div><div><h4>地域高度集中</h4><p>消费用户主要分布在东南部沿海经济发达州，圣保罗州占比约 42%；北部/东北部运费更高、配送更慢、评分更低。</p></div></div>
+      <div class="finding"><div class="idx">02</div><div><h4>二八法则显著</h4><p>约 17% 的头部大额用户贡献了 50% 的消费金额，高价值用户运营空间巨大。</p></div></div>
+      <div class="finding"><div class="idx">03</div><div><h4>低频小额消费</h4><p>97% 的用户仅消费一次，2017 年度复购率仅约 2.78%，用户忠诚度低、生命周期短。</p></div></div>
+      <div class="finding"><div class="idx">04</div><div><h4>订单右长尾</h4><p>90% 的订单消费金额低于 300 雷亚尔，90% 的订单仅购买 1 件商品。</p></div></div>
+      <div class="finding"><div class="idx">05</div><div><h4>评分两极分化</h4><p>约 58.86% 的用户评 5 分，但评分 ≤ 3 分占比达 21.44%，需结合文本情感深入洞察。</p></div></div>
+      <div class="finding"><div class="idx">06</div><div><h4>物流是瓶颈</h4><p>平均收货用时约 12.5 天，北部/东北部时效与运费问题突出，是运营优化重点。</p></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 成果展示 ===== -->
+<section class="section" id="gallery">
+  <div class="wrap">
+    <div class="section-title"><span class="tick"></span><h2>成果展示</h2><span class="en">VISUAL GALLERY</span></div>
+    <div class="gallery">
+      <figure class="shot" onclick="openLb(this)"><img src="export/exploration/Olist数据集关系图.png" alt="数据集关系图" loading="lazy" /><figcaption class="cap"><b>数据集关系图</b> · 8 张关联表 ER 关系</figcaption></figure>
+      <figure class="shot" onclick="openLb(this)"><img src="export/geospatial/收入_巴西.png" alt="巴西收入分布" loading="lazy" /><figcaption class="cap"><b>巴西各州收入分布</b> · 地理空间分析</figcaption></figure>
+      <figure class="shot" onclick="openLb(this)"><img src="export/feedback_rating/ROC AUC 曲线 - LSTM.png" alt="LSTM ROC" loading="lazy" /><figcaption class="cap"><b>LSTM ROC/AUC</b> · 评分预测深度学习</figcaption></figure>
+      <figure class="shot" onclick="openLb(this)"><img src="export/value_segmentation/巴西电子商务客户价值细分分析.png" alt="客户价值细分" loading="lazy" /><figcaption class="cap"><b>客户价值细分</b> · RFM + K-Means 分群</figcaption></figure>
+      <figure class="shot" onclick="openLb(this)"><img src="export/lifetime_value/电商核心指标趋势分析.png" alt="核心指标趋势" loading="lazy" /><figcaption class="cap"><b>电商核心指标趋势</b> · 生命周期价值预测</figcaption></figure>
+      <figure class="shot" onclick="openLb(this)"><img src="export/sentiment/评论总分计数.png" alt="评论评分计数" loading="lazy" /><figcaption class="cap"><b>评论评分计数</b> · 葡语评论情感分析</figcaption></figure>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 技术栈 ===== -->
+<section class="section">
+  <div class="wrap">
+    <div class="section-title"><span class="tick"></span><h2>技术栈</h2><span class="en">TECH STACK</span></div>
+    <div class="stack">
+      <span class="pill"><b>语言</b> · Python 3.9 · Jupyter</span>
+      <span class="pill"><b>数据处理</b> · Pandas · NumPy · SciPy</span>
+      <span class="pill"><b>可视化</b> · Plotly · Matplotlib · Seaborn · Folium · Datashader</span>
+      <span class="pill"><b>大屏</b> · Streamlit · ECharts 5</span>
+      <span class="pill"><b>机器学习</b> · Scikit-learn · XGBoost · LightGBM</span>
+      <span class="pill"><b>深度学习</b> · TensorFlow / Keras (LSTM)</span>
+      <span class="pill"><b>客户分析</b> · Lifetimes (MBG/NBD, Gamma-Gamma)</span>
+      <span class="pill"><b>NLP</b> · NLTK · WordCloud</span>
+      <span class="pill"><b>数据库</b> · MySQL · SQLAlchemy</span>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 快速开始 ===== -->
+<section class="section" id="start">
+  <div class="wrap">
+    <div class="section-title"><span class="tick"></span><h2>快速开始</h2><span class="en">QUICK START</span></div>
+    <div class="code-block">
+      <div class="code-head"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span style="margin-left:8px;font-size:12px;color:#83aed4">terminal</span></div>
+      <pre><span class="cm"># 1. 克隆仓库</span>
+git clone https://github.com/yohoten/omma.git
+<span class="cm"># 2. 安装依赖（国内建议清华镜像）</span>
+pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
+<span class="cm"># 3. 启动 Streamlit 可视化看板（默认打开科技风数据大屏）</span>
+streamlit run streamlit_app.py
+<span class="ok">✔ 访问 http://localhost:8501</span></pre>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 页脚 ===== -->
+<footer class="footer">
+  <div class="wrap">
+    <div class="links">
+      <a href="https://github.com/yohoten/omma" target="_blank" rel="noopener">GitHub</a>
+      <a href="https://gitee.com/yohotens/omma" target="_blank" rel="noopener">Gitee</a>
+      <a href="export/dashboard/omma_dashboard.html">数据大屏</a>
+      <a href="export/Olist/OlistReport.pdf">分析报告</a>
+      <a href="README.md">README</a>
+    </div>
+    <div class="copy">
+      © 2026 OMMA · <a href="https://www.kaggle.com/datasets/olistbr/brazilian-ecommerce" target="_blank" rel="noopener">Kaggle Olist Dataset</a> · 数据与分析结果仅用于学习研究用途
+    </div>
+  </div>
+</footer>
+
+<!-- ===== Lightbox ===== -->
+<div class="lightbox" id="lightbox" onclick="this.classList.remove('open')">
+  <button class="lb-close" onclick="document.getElementById('lightbox').classList.remove('open')">✕</button>
+  <img id="lbImg" src="" alt="" />
+  <div class="lb-cap" id="lbCap"></div>
+</div>
+
+<script>
+// 滚动淡入
+(function () {
+  var io = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) {
+      if (e.isIntersecting) {
+        e.target.style.opacity = 1;
+        e.target.style.transform = 'none';
+        io.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.12 });
+  document.querySelectorAll('.card, .finding, .stat-card, .shot').forEach(function (el, i) {
+    el.style.opacity = 0;
+    el.style.transform = 'translateY(16px)';
+    el.style.transition = 'opacity .5s ease ' + (i % 6) * .05 + 's, transform .5s ease ' + (i % 6) * .05 + 's';
+    io.observe(el);
+  });
+})();
+
+// Lightbox
+function openLb(fig) {
+  var img = fig.querySelector('img');
+  var cap = fig.querySelector('.cap');
+  document.getElementById('lbImg').src = img.src;
+  document.getElementById('lbImg').alt = img.alt;
+  document.getElementById('lbCap').textContent = cap ? cap.textContent.trim() : '';
+  document.getElementById('lightbox').classList.add('open');
+}
+document.addEventListener('keydown', function (e) {
+  if (e.key === 'Escape') document.getElementById('lightbox').classList.remove('open');
+});
+</script>
+</body>
+</html>
