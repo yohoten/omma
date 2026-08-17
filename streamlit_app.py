@@ -2,7 +2,10 @@
 """
 Olist 电商多模态智能分析（OMMA）—— Streamlit 可视化看板
 ==========================================================
-覆盖模块：
+模式一：🖥️ 科技大屏（默认）—— ECharts 深蓝科技风数据大屏
+    - 8 项核心 KPI、月度销售趋势、热销品类、巴西州级地图（指标切换）、
+      支付方式、RFM 分群、评分分布、订单状态、配送时效
+模式二：详细分析（原 6 大模块）
     1. 总览     —— 核心 KPI 与月度销售趋势
     2. 地理分析 —— 州级客户/订单/销售额/评分/时效 choropleth
     3. 商品分析 —— 热销品类、价格与运费
@@ -23,8 +26,10 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
+from streamlit.components.v1 import html as st_html
 
 from config import RAW_DATA_DIR, GEOJSON_PATH
+from scripts.dashboard_html import render_dashboard_html
 
 # ---------------- 页面配置 ----------------
 st.set_page_config(
@@ -48,6 +53,7 @@ COLOR_SCALES = {
 
 # 各模块 Hero 文案
 HERO = {
+    "🖥️ 科技大屏": ("🖥️ Olist 电商数据大屏", "ECharts 科技风大屏 · 订单 / 地理 / 支付 / 客户价值一站式总览"),
     "📊 总览": ("📊 全局业务总览", "订单、客户、销售额与物流时效核心指标一览"),
     "🗺️ 地理分析": ("🗺️ 巴西地理洞察", "州级客户分布、销售额、评分与配送时效"),
     "📦 商品分析": ("📦 商品与品类洞察", "热销品类、价格与运费分布"),
@@ -69,7 +75,7 @@ def inject_css():
         .block-container {
             padding-top: 1.8rem;
             padding-bottom: 3rem;
-            max-width: 1320px;
+            max-width: 1400px;
         }
         #MainMenu, footer { visibility: hidden; }
 
@@ -207,14 +213,15 @@ def section_title(text):
 
 
 def apply_layout(fig, height=420, **kwargs):
-    """统一 Plotly 图表风格。"""
+    """统一 Plotly 图表风格。调用方可覆盖默认 margin 等参数。"""
+    margin = kwargs.pop("margin", dict(l=50, r=30, t=62, b=42))
     fig.update_layout(
         template="plotly_white",
         font=dict(family="Segoe UI, Microsoft YaHei, sans-serif", size=13, color="#334155"),
         title=dict(font=dict(size=16, color="#0f172a"), x=0.02, xanchor="left"),
         paper_bgcolor="rgba(0,0,0,0)",
         plot_bgcolor="rgba(0,0,0,0)",
-        margin=dict(l=50, r=30, t=62, b=42),
+        margin=margin,
         legend=dict(orientation="h", yanchor="bottom", y=1.02, x=1, xanchor="right"),
         height=height,
         **kwargs,
@@ -263,9 +270,11 @@ def load_data() -> dict:
     products = _read_csv("olist_products_dataset.csv")
     cat_trans = _read_csv("product_category_name_translation.csv")
 
-    # ---- 订单级宽表：合并客户(州/城市)、销售额、运费、评分、配送天数 ----
+    # ---- 订单级宽表：合并客户(州/城市/唯一客户)、销售额、运费、评分、配送天数 ----
     df = orders.merge(
-        customers[["customer_id", "customer_state", "customer_city"]],
+        customers[
+            ["customer_id", "customer_unique_id", "customer_state", "customer_city"]
+        ],
         on="customer_id",
         how="left",
     )
@@ -314,6 +323,31 @@ def load_geojson() -> dict:
 
 
 @st.cache_data(show_spinner=False)
+def simplify_geojson(geojson: dict) -> dict:
+    """精简 GeoJSON：仅保留州名/缩写，坐标降低精度，供大屏前端注册地图。"""
+    out = {"type": geojson["type"], "features": []}
+    for f in geojson["features"]:
+        props = f["properties"]
+
+        def _round_coords(obj):
+            if isinstance(obj, list):
+                return [_round_coords(x) for x in obj]
+            return round(obj, 3)
+
+        out["features"].append(
+            {
+                "type": f["type"],
+                "properties": {"name": props["name"], "sigla": props["sigla"]},
+                "geometry": {
+                    "type": f["geometry"]["type"],
+                    "coordinates": _round_coords(f["geometry"]["coordinates"]),
+                },
+            }
+        )
+    return out
+
+
+@st.cache_data(show_spinner=False)
 def compute_rfm(df: pd.DataFrame) -> pd.DataFrame:
     """基于订单数据计算 RFM 并分群（中位数二分法）。"""
     rfm = df.groupby("customer_id").agg(
@@ -351,6 +385,195 @@ def compute_rfm(df: pd.DataFrame) -> pd.DataFrame:
 
     rfm["segment"] = rfm.apply(_classify, axis=1)
     return rfm
+
+
+@st.cache_data(show_spinner="正在聚合大屏数据...")
+def build_dashboard_payload(d: dict) -> dict:
+    """一次性聚合科技大屏所需全部数据（供前端 JSON 渲染）。"""
+    df = d["df"]
+    payments = d["payments"]
+    reviews = d["reviews"]
+    products = d["products"]
+    item_cat = d["item_cat"]
+
+    delivered = df[df["order_status"] == "delivered"]
+    total_orders = int(df["order_id"].nunique())
+    total_sales = float(df["order_value"].sum())
+    avg_score = float(delivered["review_score"].mean())
+    avg_delivery = float(delivered["delivery_days"].mean())
+
+    orders_per_user = (
+        df.groupby("customer_unique_id")["order_id"].nunique().reset_index()
+    )
+    repeat_rate = float((orders_per_user["order_id"] >= 2).mean())
+
+    kpi = [
+        {"label": "总订单数", "value": total_orders, "unit": "单", "icon": "🛒", "color": "#00e5ff", "decimals": 0},
+        {"label": "唯一客户数", "value": int(df["customer_unique_id"].nunique()), "unit": "人", "icon": "👥", "color": "#3d7eff", "decimals": 0},
+        {"label": "总销售额", "value": total_sales, "unit": "R$", "icon": "💰", "color": "#00ffa3", "decimals": 0},
+        {"label": "平均客单价", "value": total_sales / total_orders, "unit": "R$", "icon": "🧾", "color": "#ffb020", "decimals": 2},
+        {"label": "平均评分", "value": avg_score, "unit": "分", "icon": "⭐", "color": "#ff4d8f", "decimals": 2},
+        {"label": "平均配送", "value": avg_delivery, "unit": "天", "icon": "🚚", "color": "#8b5cf6", "decimals": 1},
+        {"label": "复购率", "value": repeat_rate * 100, "unit": "%", "icon": "🔁", "color": "#5eead4", "decimals": 1},
+        {"label": "商品品类", "value": int(products["product_category_name"].nunique()), "unit": "类", "icon": "🏷️", "color": "#ff7a3d", "decimals": 0},
+    ]
+
+    # 月度趋势
+    monthly = (
+        df.set_index("order_purchase_timestamp")
+        .resample("ME")
+        .agg(orders=("order_id", "nunique"), sales=("order_value", "sum"))
+        .reset_index()
+    )
+    monthly["month"] = monthly["order_purchase_timestamp"].dt.strftime("%Y-%m")
+
+    # 品类 Top 10（按销量）
+    cat_cnt = (
+        item_cat.groupby("category")
+        .agg(count=("order_item_id", "count"), sales=("price", "sum"))
+        .reset_index()
+    )
+    cat_top = cat_cnt.nlargest(10, "count").sort_values("count")
+
+    # 州级指标
+    state = (
+        df.groupby("customer_state")
+        .agg(
+            customers=("customer_unique_id", "nunique"),
+            orders=("order_id", "nunique"),
+            sales=("order_value", "sum"),
+            score=("review_score", "mean"),
+            delivery=("delivery_days", "mean"),
+        )
+        .reset_index()
+        .rename(columns={"customer_state": "sigla"})
+    )
+
+    # 支付方式
+    pay = (
+        payments.groupby("payment_type")
+        .agg(amount=("payment_value", "sum"), orders=("order_id", "nunique"))
+        .reset_index()
+        .sort_values("amount", ascending=False)
+    )
+
+    # RFM 分群（唯一客户口径）
+    rfm = (
+        df.groupby("customer_unique_id")
+        .agg(
+            last_purchase=("order_purchase_timestamp", "max"),
+            frequency=("order_id", "nunique"),
+            monetary=("order_value", "sum"),
+        )
+    )
+    last_date = df["order_purchase_timestamp"].max()
+    rfm["recency"] = (last_date - rfm["last_purchase"]).dt.days
+    r_med, f_med, m_med = (
+        rfm["recency"].median(),
+        rfm["frequency"].median(),
+        rfm["monetary"].median(),
+    )
+
+    def _seg(row):
+        r = row["recency"] <= r_med
+        f = row["frequency"] > f_med
+        m = row["monetary"] > m_med
+        if r and f and m:
+            return "重要价值用户"
+        if r and m:
+            return "重要保持用户"
+        if r and f:
+            return "重要发展用户"
+        if r:
+            return "重要挽留用户"
+        if m:
+            return "一般价值用户"
+        if f:
+            return "一般发展用户"
+        if not (r or f or m):
+            return "一般挽留用户"
+        return "一般保持用户"
+
+    rfm["segment"] = rfm.apply(_seg, axis=1)
+    seg_summary = (
+        rfm.groupby("segment")
+        .agg(count=("segment", "size"), money=("monetary", "mean"))
+        .reset_index()
+        .sort_values("count", ascending=False)
+    )
+
+    # 评分分布
+    score_dist = (
+        reviews["review_score"].value_counts().reindex([1, 2, 3, 4, 5], fill_value=0)
+    )
+
+    # 订单状态
+    status = df["order_status"].value_counts().reset_index()
+    status.columns = ["name", "count"]
+
+    # 配送时效分组 + 平均评分
+    dl = delivered[["delivery_days", "review_score"]].dropna()
+    bins = [0, 5, 10, 15, 20, 30, 10_000]
+    labels = ["0-5天", "6-10天", "11-15天", "16-20天", "21-30天", "30天+"]
+    dl["range"] = pd.cut(dl["delivery_days"], bins=bins, labels=labels, right=True)
+    dl_group = (
+        dl.groupby("range", observed=True)
+        .agg(count=("review_score", "size"), score=("review_score", "mean"))
+        .reset_index()
+    )
+    dl_total = dl_group["count"].sum()
+    delivery = [
+        {"range": r, "ratio": round(c / dl_total * 100, 2), "score": round(s, 2)}
+        for r, c, s in zip(dl_group["range"], dl_group["count"], dl_group["score"])
+    ]
+
+    return {
+        "kpi": kpi,
+        "monthly": {
+            "months": monthly["month"].tolist(),
+            "orders": monthly["orders"].astype(int).tolist(),
+            "sales": monthly["sales"].round(0).tolist(),
+        },
+        "categories": [
+            {"name": r["category"], "count": int(r["count"]), "sales": float(r["sales"])}
+            for _, r in cat_top.iterrows()
+        ],
+        "states": [
+            {
+                "sigla": r["sigla"],
+                "name": r["sigla"],
+                "customers": int(r["customers"]),
+                "orders": int(r["orders"]),
+                "sales": float(r["sales"]),
+                "score": float(r["score"]) if pd.notna(r["score"]) else None,
+                "delivery": float(r["delivery"]) if pd.notna(r["delivery"]) else None,
+            }
+            for _, r in state.iterrows()
+        ],
+        "payments": [
+            {"name": r["payment_type"], "amount": float(r["amount"]), "orders": int(r["orders"])}
+            for _, r in pay.iterrows()
+        ],
+        "rfm": [
+            {"name": r["segment"], "count": int(r["count"]), "money": float(r["money"])}
+            for _, r in seg_summary.iterrows()
+        ],
+        "score": [
+            {"name": str(i), "count": int(score_dist.loc[i])} for i in [1, 2, 3, 4, 5]
+        ],
+        "status": [{"name": r["name"], "count": int(r["count"])} for _, r in status.iterrows()],
+        "delivery": delivery,
+    }
+
+
+# ============================================================
+# 大屏：科技风 ECharts 数据大屏
+# ============================================================
+def render_dashboard(d):
+    payload = build_dashboard_payload(d)
+    geojson = simplify_geojson(load_geojson())
+    html = render_dashboard_html(payload, geojson)
+    st_html(html, height=1050, scrolling=True)
 
 
 # ============================================================
@@ -450,7 +673,8 @@ def render_geo(d, geojson):
         title=f"巴西各州{metric}分布",
     )
     fig.update_geos(fitbounds="locations", visible=False)
-    show_chart(fig, height=560, margin=dict(l=10, r=10, t=60, b=10))
+    with c1:
+        show_chart(fig, height=560, margin=dict(l=10, r=10, t=60, b=10))
 
     top = state.nlargest(12, "销售额")[
         ["州名", "state", "客户数", "订单数", "销售额", "平均评分", "平均配送天数"]
@@ -680,9 +904,12 @@ def main():
             unsafe_allow_html=True,
         )
         menu = st.radio(
-            "选择分析模块",
-            ["📊 总览", "🗺️ 地理分析", "📦 商品分析", "💳 支付分析", "⭐ 评分与评论", "👤 客户价值"],
+            "选择视图",
+            ["🖥️ 科技大屏", "📊 总览", "🗺️ 地理分析", "📦 商品分析", "💳 支付分析", "⭐ 评分与评论", "👤 客户价值"],
         )
+        if menu != "🖥️ 科技大屏":
+            st.markdown("---")
+            st.caption("提示：大屏为 ECharts 科技风视图，首次加载需联网获取 CDN。")
         st.markdown("---")
         st.caption("数据：Kaggle · Olist Brazilian E-Commerce")
         st.caption("分析仅供学习研究用途。")
@@ -697,6 +924,15 @@ def main():
     except FileNotFoundError as e:
         st.error(str(e))
         st.stop()
+
+    if menu == "🖥️ 科技大屏":
+        try:
+            render_dashboard(d)
+        except FileNotFoundError as e:
+            st.error(str(e))
+        except Exception as e:
+            st.warning(f"大屏渲染失败：{e}。可切换到下方详细分析模块。")
+        return
 
     geojson = None
     if menu == "🗺️ 地理分析":
